@@ -1,0 +1,75 @@
+---
+title: "MIS 510 Portfolio Project Option 2"
+author: "Ty Cook"
+date: "4/20/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+### Read Datset into Dataframe
+```{r}
+crosssell.df <- read.csv("CatalogCrossSell.csv", header = TRUE) #Read CatalogCrossSell.csv into crosssell.df dataframe
+```
+### Dimensions/Subsetting Data
+```{r}
+dim(crosssell.df) #View Dimensions of Dataframe
+crosssell.df <- crosssell.df[c(1:10)] #Subset Data elimate empty NA rows
+crosssell.df <- crosssell.df[complete.cases(crosssell.df),] #Subset Data elimate empty NA Columns
+dim(crosssell.df)#View Dimensions of Subset Dataframe
+```
+### Summary
+```{r}
+summary(crosssell.df[,2:10]) #Summary of columns minus the first customer id columns
+```
+### Creating Data Matrix
+```{r}
+count.df <- crosssell.df[,2:10] #Create count.df Dataframe using columns 2 through 10 of crosssell.df
+mat.df <- ifelse(count.df > 0, 1, 0) #Create mat.df using if else > 0 True = 1 and False = 0 of count.df
+cs.mat <- as.matrix(mat.df[, -1]) #Read dataframe mat.df into matrix cs.mat
+cs.mat[1:10, ] #Output top 10 Columns and Rows of the cs.mat
+```
+### Creating Transactions Database
+```{r}
+library(arules) #Call library arules
+cs.trans <- as(cs.mat, "transactions") #Read matrix cs.mat into a transactions database cs.trans
+inspect(cs.trans[1:10, ]) #Output top 10 Columns and Rows of the transactions database cs.trans
+```
+### Item Frequency 
+```{r}
+itemFrequencyPlot(cs.trans) #Plot Item Frequency Graph using cs.trans
+itemFrequency(cs.trans) #Item Frequency information
+```
+
+### Apriori Function
+```{r}
+rules <-apriori(cs.trans, parameter = list(supp = 0.01, conf = 0.5, maxlen = 2, target = "rules")) #Create Rules item using cs.trans with the parmaters of minimum support of 0.01 and confience interval of 0.5 max length of 2 by rules
+summary(rules) #Summarize rules
+inspect(head(sort(rules, by = "lift")))  #Inspect rules of first rules sorted by lift
+```
+#### Right Hand Side
+```{r}
+rules.rhs<-apriori(cs.trans, parameter=list(supp=0.01,conf = 0.05, maxlen = 2), #Create Rules.rhs item using cs.trans with the parmaters of minimum support of 0.01 and confience interval of 0.5 max length of 2
+               appearance = list(default="lhs",rhs="Garden.Division"), #Target where lhs can be any value and rhs is equal Garden.Division
+               control = list(verbose=F)) #Turn off warnings and error logs
+summary(rules.rhs) #Summary of rules.rhs
+inspect(head(sort(rules.rhs, by = "confidence"))) #Inspect rules.rhs of first rules.rhs sorted by confidence
+```
+#### Left Hand Side
+```{r}
+rules.lhs<-apriori(cs.trans, parameter=list(supp=0.01,conf = 0.05, minlen = 2), #Create Rules.lhs item using cs.trans with the parmaters of minimum support of 0.01 and confience interval of 0.5 max length of 2
+               appearance = list(default="rhs",lhs="Garden.Division"), #Target where rhs can be any value and lhs is equal Garden.Division
+               control = list(verbose=F)) #Turn off warnings and error logs
+summary(rules.lhs) #Summary of rules.lhs
+inspect(head(sort(rules.lhs, by = "confidence"))) #Inspect rules.lhs of first rules.rhs sorted by confidence
+```
+### Relationship Chart
+```{r}
+library(arulesViz) #Call to the library arulesViz
+plot(rules,method="graph",shading=NA) #Plot relationship chart from rules
+```
+
+
